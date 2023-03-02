@@ -4,6 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "ejs": "^3.1.8",
+    "nodemon": "^2.0.20"
   }
 }

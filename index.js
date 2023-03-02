@@ -2,7 +2,10 @@
 
 const http = require('http');
 const user = require('./user');
+const fs = require('fs')
+const ejs = require('ejs');
 const products = require('./products');
+const IDENT_SALE = Math.floor(Math.random() * 10);
 
 function getShowcase(user, products) {
 	return products.map((product) => {
@@ -14,6 +17,9 @@ function getShowcase(user, products) {
 			showcaseItem.price = product.price * (100 - product.sale) / 100;
 		} else {
 			showcaseItem.price = product.price;
+		}
+		if (user.status === 'ident') {
+			showcaseItem.price = showcaseItem.price * (100 - IDENT_SALE) / 100;
 		}
 
 		return showcaseItem;
@@ -27,27 +33,36 @@ function getBonuses(user, showcase) {
 	return [randomProduct];
 }
 
-http.createServer((req,res) => {
-	const showcase = getShowcase(user, products);
-	const bonuses = getBonuses(user, showcase);
+http.createServer((req, res) => {
+	const showcase = user.status === 'anonym' ? [] : getShowcase(user, products);
+	const bonuses = user.status === 'newbie' ? getBonuses(user, showcase) : [];
 
-	const pageData = {showcase, bonuses};
+	const pageData = { showcase, bonuses };
+	//console.log(pageData)
+	let discount;
+	switch (user.status) {
+		case 'ident':
+			discount = 5;
+			break;
+		case 'newbie':
+			discount = 0;
+			break;
+		default:
+			discount = 0;
+	}
+	fs.readFile('./index.ejs', 'utf8', (err, data) => {
+		if (err) {
+			res.writeHead(404, { 'Content-Type': 'text/plain' });
+			res.write('Not found');
+			res.end();
+			return;
+		}
+		const html = ejs.render(data, { ...pageData, user, discount })
+		res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+		res.write(html);
+		res.end();
+	})
 
-	res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
-	res.end(`<!DOCTYPE html>
-		<html>
-		<head>
-			<title>Витрина</title>
-		</head>
-		<body>
-			<h1>Витрина</h1>
-			<ul>
-				<li><strong>Товар 1</strong> - 100 &#8381;</li>
-			</ul>
-			<span>После покупки вам будет доступен бонус.</span>
-			<p>Витрина доступна только для зарегистрированных пользователей.</p>
-		</body>
-		</html>`);
 }).listen(3000, () => {
 	console.log('Ready on http://localhost:3000');
 });

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Витрина</title>
+</head>
+
+<body>
+    <h1>Витрина</h1>
+    <% if (user.status==='anonym' ) { %>
+        <p>Витрина доступна только для зарегистрированных пользователей.</p>
+        <% } else { %>
+            <ul>
+                <% for (const item of showcase) { %>
+                    <li><strong>
+                            <%= item.name %>
+                        </strong> - <%= (item.price * (100 - discount) / 100).toFixed(2) %> &#8381;</li>
+                    <% } %>
+            </ul>
+            <% if (user.status==='newbie' ) { %>
+                <span>После покупки вам будет доступен бонус.</span>
+                <% } %>
+                    <% } %>
+</body>
+
+</html>
