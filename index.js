@@ -1,11 +1,47 @@
 'use strict';
 
-const http = require('http');
-const user = require('./user');
-const fs = require('fs')
+const express = require('express');
 const ejs = require('ejs');
+const user = require('./user');
 const products = require('./products');
+const fs = require('fs');
 const IDENT_SALE = Math.floor(Math.random() * 10);
+
+const app = express();
+const port = 3000;
+
+app.set('view engine', 'ejs');
+
+app.get('/', (req, res) => {
+	const showcase = user.status === 'anonym' ? [] : getShowcase(user, products);
+	const bonuses = user.status === 'newbie' ? getBonuses(user, showcase) : [];
+
+	const pageData = { showcase, bonuses };
+	let discount;
+	switch (user.status) {
+		case 'ident':
+			discount = 5;
+			break;
+		case 'newbie':
+			discount = 0;
+			break;
+		default:
+			discount = 0;
+	}
+
+	fs.readFile('./index.ejs', 'utf8', (err, data) => {
+		if (err) {
+			res.status(404).send('Not found');
+			return;
+		}
+		const html = ejs.render(data, { ...pageData, user, discount });
+		res.status(200).send(html);
+	});
+});
+
+app.listen(port, () => {
+	console.log(`Ready on http://localhost:${port}`);
+});
 
 function getShowcase(user, products) {
 	return products.map((product) => {
@@ -32,37 +68,3 @@ function getBonuses(user, showcase) {
 
 	return [randomProduct];
 }
-
-http.createServer((req, res) => {
-	const showcase = user.status === 'anonym' ? [] : getShowcase(user, products);
-	const bonuses = user.status === 'newbie' ? getBonuses(user, showcase) : [];
-
-	const pageData = { showcase, bonuses };
-	//console.log(pageData)
-	let discount;
-	switch (user.status) {
-		case 'ident':
-			discount = 5;
-			break;
-		case 'newbie':
-			discount = 0;
-			break;
-		default:
-			discount = 0;
-	}
-	fs.readFile('./index.ejs', 'utf8', (err, data) => {
-		if (err) {
-			res.writeHead(404, { 'Content-Type': 'text/plain' });
-			res.write('Not found');
-			res.end();
-			return;
-		}
-		const html = ejs.render(data, { ...pageData, user, discount })
-		res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-		res.write(html);
-		res.end();
-	})
-
-}).listen(3000, () => {
-	console.log('Ready on http://localhost:3000');
-});
